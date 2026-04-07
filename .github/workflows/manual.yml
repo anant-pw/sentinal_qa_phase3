@@ -1,0 +1,51 @@
+name: Sentinel-QA Manual Execution
+
+on:
+  workflow_dispatch: # Enables the "Run Workflow" button in GitHub Actions UI
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: .
+      DATABASE_URL: sqlite:///./sentinel.db
+      SAMBANOVA_API_KEY: ${{ secrets.SAMBANOVA_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      JIRA_URL: ${{ secrets.JIRA_URL }}
+      JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
+      JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+      JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install Dependencies
+        run: |
+          pip install -r requirements.txt
+          playwright install --with-deps chromium
+
+      - name: Start Sentinel API (Background)
+        run: |
+          # Start FastAPI and wait for it to wake up
+          uvicorn api.main:app --host 0.0.0.0 --port 8000 &
+          timeout 30s bash -c 'until curl -s localhost:8000/plans; do sleep 2; done'
+
+      - name: Hydrate DB (Migrate YAMLs)
+        run: python -m scripts.migrate_yamls
+
+      - name: Run Sentinel-QA (Parallel Execution)
+        run: pytest tests/test_engine.py
+
+      - name: Archive Test Evidence (Screenshots & Allure)
+        if: always() # Runs even if tests fail
+        uses: actions/upload-artifact@v4
+        with:
+          name: sentinel-evidence
+          path: |
+            allure-results/
+            *.png
