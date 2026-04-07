@@ -10,7 +10,7 @@ steps:
   selector: input[name='password']
 - action: click
   data: null
-  selector: button[type='submit-wrong']
+  selector: button[type='submit']
 - action: verify_text
   data: Dashboard
   selector: .oxd-topbar-header-breadcrumb
