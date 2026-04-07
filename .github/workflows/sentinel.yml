@@ -1,7 +1,9 @@
-name: Sentinel-QA Manual Execution
+name: Sentinel-QA Autonomous Pipeline
 
 on:
-  workflow_dispatch: # Enables the "Run Workflow" button in GitHub Actions UI
+  push:
+    branches: [ main ]
+  workflow_dispatch:
 
 jobs:
   test:
@@ -15,6 +17,7 @@ jobs:
       JIRA_EMAIL: ${{ secrets.JIRA_EMAIL }}
       JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+      JIRA_ISSUE_TYPE: ${{ secrets.JIRA_ISSUE_TYPE }}
 
     steps:
       - uses: actions/checkout@v4
@@ -29,20 +32,19 @@ jobs:
           pip install -r requirements.txt
           playwright install --with-deps chromium
 
-      - name: Start Sentinel API (Background)
+      - name: Start Sentinel API
         run: |
-          # Start FastAPI and wait for it to wake up
           uvicorn api.main:app --host 0.0.0.0 --port 8000 &
           timeout 30s bash -c 'until curl -s localhost:8000/plans; do sleep 2; done'
 
-      - name: Hydrate DB (Migrate YAMLs)
+      - name: Hydrate DB
         run: python -m scripts.migrate_yamls
 
-      - name: Run Sentinel-QA (Parallel Execution)
+      - name: Run Sentinel-QA
         run: pytest tests/test_engine.py
 
-      - name: Archive Test Evidence (Screenshots & Allure)
-        if: always() # Runs even if tests fail
+      - name: Archive Evidence
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: sentinel-evidence
