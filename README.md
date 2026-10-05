@@ -1,5 +1,7 @@
 # 🛡️ Sentinel-QA
 
+> **Learning project.** A personal experiment in LLM-assisted test generation. It is a prototype, not maintained, and not production code.
+
 ## Cognitive QA Ecosystem — From Requirements to Autonomous Execution
 
 > **Status: 🧪 Alpha / Prototype**  

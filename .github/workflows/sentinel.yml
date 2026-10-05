@@ -1,8 +1,8 @@
 name: Sentinel-QA Autonomous Pipeline
 
+# Manual runs only: this pipeline files Jira tickets on failure, so it must
+# not fire on every push.
 on:
-  push:
-    branches: [ main ]
   workflow_dispatch:
 
 jobs:
